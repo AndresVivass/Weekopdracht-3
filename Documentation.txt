@@ -62,6 +62,13 @@ $syslog_incoming_config['textField']          = 'message';
 $syslog_incoming_config['id']                 = 'seq';
 
 
+wget https://docs.cacti.net/_media/plugin:syslog-v1.22-2.tgz
+mv ..... syslog.tgz
+
+wget https://docs.cacti.net/_media/plugin:settings-v0.71-1.tgz
+
+mv ..... settings.tgz
+
 
 ===========================
 Client Server
