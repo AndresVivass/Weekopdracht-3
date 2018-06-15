@@ -1,6 +1,118 @@
-
 ===========================
 Monitor Server
 ===========================
 
-apt install msql-server
+----Initial Configuration----
+apt-get update
+apt-get upgrade
+
+
+----Installing Monitor Tool----
+apt-get install cacti
+  - apache2
+  - php
+  - mysql
+  
+apt install mysql-server
+
+
+----NANO-----
+/etc/rsyslog.d/cacti.conf
+
+$ModLoad imudp
+$UDPServerRun 514
+$ModLoad ommysql
+
+$template cacti_syslog,"INSERT INTO syslog_incoming(facility, priority, date, time, host, message) \
+values (%syslogfacility%, %syslogpriority%, '%timereported:::date-mysql%', \
+'%timereported:::date-mysql%', '%HOSTNAME%', TRIM('%msg%'))", SQL
+
+*.* >localhost,cacti,root,admin;cacti_syslog
+
+
+----NANO-----
+/usr/share/cacti/site/plugins/syslog/config.php
+
+/* revert if you dont use the Cacti database */
+$use_cacti_db = true;
+
+if (!$use_cacti_db) {
+        $syslogdb_type     = 'mysql';
+        $syslogdb_default  = 'syslog';
+        $syslogdb_hostname = 'localhost';
+        $syslogdb_username = 'cactiuser';
+        $syslogdb_password = 'cactiuser';
+        $syslogdb_port     = 3306;
+}else{
+        $syslogdb_type     = $database_type;
+        $syslogdb_default  = $database_default;
+        $syslogdb_hostname = $database_hostname;
+        $syslogdb_username = 'root';
+        $syslogdb_password = 'admin';
+        $syslogdb_port     = $database_port;
+}
+
+/* field in the incomming table */
+$syslog_incoming_config['dateField']          = 'date';
+$syslog_incoming_config['timeField']          = 'time';
+$syslog_incoming_config['priorityField']      = 'priority';
+$syslog_incoming_config['facilityField']      = 'facility';
+$syslog_incoming_config['hostField']          = 'host';
+$syslog_incoming_config['textField']          = 'message';
+$syslog_incoming_config['id']                 = 'seq';
+
+
+
+===========================
+Client Server
+===========================
+----Initial Configuration----
+apt-get update
+apt-get upgrade
+
+apt-get install snmp snmpd
+
+----NANO-----
+/etc/snmp/snmpd.conf ( Remove the # of the last line to be able to listen for connections )
+
+#  Listen for connections from the local system only
+# agentAddressudp:127.0.0.1:161
+# Listen for connections on all interfaces (both IPv4 \*and\* IPv6) agentAddress udp:161,udp6:[::1]:161
+
+service snmpd reload  
+
+----NANO-----
+/etc/rsyslog.d/remote.conf
+
+$ModLoad imfile
+$InputFilePollInterval 10
+$PrivDropToGroup adm
+$WorkDirectory /var/spool/rsyslog
+
+#Apache access file:
+$InputFileName /var/log/apache2/access.log
+$InputFileTag apache-access:
+$InputFileStateFile stat-apache-access
+$InputFileSeverity info
+$InputFilePersistStateInterval 20000
+$InputRunFileMonitor
+
+#Apache Error file:
+$InputFileName /var/log/apache2/error.log
+$InputFileTag apache-error:
+$InputFileStateFile stat-apache-error
+$InputFileSeverity error
+$InputFilePersistStateInterval 20000
+$InputRunFileMonitor
+
+#Mysql file:
+#$InputFileName /var/log/mysql/error.log
+#$InputFileTag mysql-error:
+#$InputFileStateFile stat-mysql-error
+#$InputFileSeverity error
+#$InputFilePersistStateInterval 20000
+#$InputRunFileMonitor
+
+*.* @10.0.73.6
+
+
