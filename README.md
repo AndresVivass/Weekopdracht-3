@@ -1,4 +1,7 @@
 # Weekopdracht-3
 
+===========================
+Monitor Server
+===========================
 
-test
+apt install msql-server
